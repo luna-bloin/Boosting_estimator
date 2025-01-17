@@ -15,7 +15,7 @@ def preprocess(ds,mean=True):
     da = ds["TREFHTMX"]
     if mean == True:
         da = weighted_mean(da)
-    ds_out = (da.rolling(time=5, center=True).mean()+KtoC).rename({"TREFHTMX":"Tx5d","Z500":"Z500x5d"})
+    ds_out = (da.rolling(time=5, center=True).mean()+KtoC).to_dataset(name="Tx5d")
     return ds_out
 
 def weighted_mean(da):

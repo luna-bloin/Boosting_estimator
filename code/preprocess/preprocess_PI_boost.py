@@ -4,11 +4,7 @@ import datetime as dt
 import sys
 sys.path.append("../utils")
 import preproc as pc
-## paths
-# source data folder
-cesm_path = '/net/meso/climphys/cesm212/b.e212.B1850cmip6.f09_g17.001/archive/atm/hist/'
-# processed data
-output_path = '/net/xenon/climphys/lbloin/boost_proba/'
+
 
 # === Preprocess boosted runs, resulting from PiControl_select.ipynb, in same way ===
 # chosen cases
@@ -31,7 +27,7 @@ cases_boosted = {
 
 for tim in cases_boosted:
     print(tim)
-    clim_tim = xr.open_dataset(f'{output_path}PI_control_{tim}_PNW_Tx5d_with_anom.nc').Tx5d.rolling(time=30,center=True).mean().groupby("time.dayofyear").mean()
+    clim_tim = xr.open_dataset(f'{pc.output_path}PI_test_slice_{tim}.nc').Tx5d.rolling(time=30,center=True).mean().groupby("time.dayofyear").mean()
     for case in cases_boosted[tim]:
         print(case)
         # loop over all dates for each case
@@ -48,7 +44,7 @@ for tim in cases_boosted:
             h1_filenames_boost = sorted(glob.glob(f"/net/meso/climphys/cesm212/boosting_piControl/archive/B1850cmip6.1000001.{current_date}*/atm/hist/B1850cmip6.1000001.{current_date}*.cam.h1.*-00000.nc"))
             members = [int(ls[87:90]) for ls in h1_filenames_boost] # find the exact member number from the file (in case one is missing)
             if h1_filenames_boost != []:
-                ds = xr.open_mfdataset(h1_filenames_boost,combine="nested", concat_dim="member", coords='minimal',preprocess=pc.preprocess)
+                ds = xr.open_mfdataset(h1_filenames_boost,combine="nested", concat_dim="member", coords='minimal',preprocess=pc.preprocess).isel(time=slice(0,21))
                 print("opened")
                 ds["member"] = members
                 # add anomalies
@@ -59,5 +55,5 @@ for tim in cases_boosted:
             current_date += dt.timedelta(days=1)
         boost = xr.concat(boost,dim="start_date")
         boost["start_date"] = [int((dt - peak_date).days) for dt in dates]
-        boost.to_netcdf(f'{output_path}PNW_PI_boosted_{case}.nc')
+        boost.to_netcdf(f'{pc.output_path}PNW_PI_boosted_{case}.nc')
         print("saved")

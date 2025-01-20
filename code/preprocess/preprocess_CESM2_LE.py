@@ -23,6 +23,7 @@ for period in tqdm(["1850-2014","2015-2100"]):
     h1_filenames = sorted(glob.glob(f"{LE100_path}tasmax_*_r*i1p1.{period}.nc"))
     #open and preprocess
     pnw_le100.append(xr.open_mfdataset(h1_filenames,preprocess=preproc,combine="nested",concat_dim="member",parallel=True))
+pnw_le100["member"] = [int(h1_filenames[i][59:-17]) for i in range(100)]
 print("opened")
 pnw_le100 = xr.concat(pnw_le100,dim="time")
 print("concatenated")

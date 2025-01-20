@@ -1,6 +1,12 @@
 import numpy as np
 import xarray as xr
 
+## paths
+# source data folder
+cesm_path = '/net/meso/climphys/cesm212/b.e212.B1850cmip6.f09_g17.001/archive/atm/hist/'
+boost_path = "/net/meso/climphys/cesm212/boosting/archive/"
+# processed data
+output_path = '/net/xenon/climphys/lbloin/boost_proba/'
 
 #defining the area to crop
 min_lon = -123+360

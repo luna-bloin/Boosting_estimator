@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from matplotlib.colors import to_rgba
+import return_calc as rc
 
 ### Matplotlib parameters
 plt.rcParams.update({
@@ -33,7 +34,11 @@ def set_grid(ax=None):
     ax.grid(linestyle='dotted', linewidth=0.3)
 
 # Plot that highlights the parents 
-def plot_parents(ax,x,y):
+def plot_parents(ax,x,y,label=True):
+    if label == True:
+        lab = "Parent Events"
+    else:
+        lab = "__nolab"
     ax.plot(
         x,
         y,
@@ -42,17 +47,17 @@ def plot_parents(ax,x,y):
         mew=0.5,
         color=colors[1],
         markersize=4,
-        label="Parent Events",
+        label=lab,
         zorder=3
     )
     return None
 
 # plotting the return time of a non-boosted simulation, with GEV fit
-def plot_return(TXx5d,bootstrapped_GEV,label,ax,color = color[1],msize=3):
+def plot_return(TXx5d,bootstrapped_GEV,label,ax,color = colors[1],msize=3):
     # plot the naively estimated return time
     ax.plot(
-        naive_estimator(TXx5d)[0], 
-        naive_estimator(TXx5d)[1],
+        rc.naive_estimator(TXx5d)[0], 
+        rc.naive_estimator(TXx5d)[1],
         ".",
         label=label,
         markersize=5,

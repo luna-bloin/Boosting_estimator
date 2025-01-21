@@ -5,13 +5,15 @@ import plot_config as pco
 import return_calc as rc
 import xarray as xr
 from tqdm import tqdm
+from glob import glob
+
 
 time_periods = {
     "T1": [1801,1850],
     "T2": [1851,1900],
 }
 
-plot_labels = {"T0":r"Control period: $N ="+ str(len(PIs["T0"].groupby("time.year").max()))+r"$",
+plot_labels = {"T0":r"Control period: $N =4000$",
           "T1":'Test slice: $N = 50$',
           "T2":'Test slice: $N = 50$',
           "T3":'Test slice: $N = 100$',
@@ -27,28 +29,28 @@ def read_parents(test_slice):
         list: A list of years (integers) from the specified test slice.
     """
     # Read the CSV file
-    df = pd.read_csv('selected_events.csv', sep=';', dtype=str)
+    df = pd.read_csv('../../inputs/selected_events.csv', sep=';', dtype=str)
     if test_slice == 'T3': # reads from both T1 and and T2 and combines it into one list
-        years = pd.concat([df[col].astype(int) for col in ["T1","T2"]).tolist()
+        years = pd.concat([df[col].astype(int) for col in ["T1","T2"]]).tolist()
     else:
         years = df[test_slice].astype(int).tolist()
     return years
 
 
 class PI_simulation():
-    def __init__(self, test_slice=None):
+    def __init__(self, test_slice):
         """
         Initializes the PI_simulation class.
     
         Parameters:
-        test_slice (str): test slice. Either T1, T2, T3 or None (for entire reference simulation)
+        test_slice (str): test slice. Either T1, T2, T3 or T0 (for entire reference simulation)
     
         Returns:
         None
         """
         #assign attributes
         self.test_slice = test_slice
-        if self.test_slice == None:
+        if self.test_slice == "T0":
             self.full_simulation = xr.open_dataset(f"{pco.path}PNW_PI_control_simulation.nc").Tx5d_anom.sel(time=slice(None,"4000"))
         else:
             self.full_simulation = xr.open_dataset(f"{pco.path}PNW_PI_test_slice_{self.test_slice}.nc").Tx5d_anom
@@ -56,8 +58,8 @@ class PI_simulation():
         # find return time for all TXx5d
         self.bootstrapped_GEV = rc.return_time_bootstrap(self.TXx5d,bootstrap = 1000)
         # Only the TXx5d of the years that are selected to be boosted
-        if test_slice != None:
-            self.parents = self.TXx5d.where(year in read_parents(self.test_slice,drop=True)) 
+        if test_slice != "T0":
+            self.parents = self.TXx5d.sel(year=read_parents(self.test_slice))
 
     def pref_tref(self):
         # find Tref and its probability
@@ -83,7 +85,7 @@ class PI_simulation():
                 msize=3
             )
         #highlight parent events
-        if tim == "T3": #go parent by parent to find the correct return time index (since the selected 10 events in T3 are not top 10)
+        if self.test_slice == "T3": #go parent by parent to find the correct return time index (since the selected 10 events in T3 are not top 10)
             sorted_TXx5d = self.TXx5d.sortby(self.TXx5d,ascending=False)
             for i,time_slice in enumerate(["T1","T2"]):
                 for j,parent in enumerate(self.parents):
@@ -94,11 +96,11 @@ class PI_simulation():
                     index = len(self.TXx5d.where(self.TXx5d >= parent.values,drop=True))
                     pco.plot_parents(
                         ax,
-                        naive_estimator(self.TXx5d)[0][index-1]
-                        parent.values
+                        rc.naive_estimator(self.TXx5d)[0][index-1],
+                        parent.values,
                     )
         else:
-            return_times,return_levels = naive_estimator(self.TXx5d)
+            return_times,return_levels = rc.naive_estimator(self.TXx5d)
             pco.plot_parents(
                         ax,
                         return_times[0:5],
@@ -116,21 +118,22 @@ class boosted_PI_simulation():
         Returns:
         None
         """
+        self.test_slice = test_slice
         #parent simulations
         self.parent_sim = PI_simulation(test_slice)
         # opening boosted runs
         files = glob(f'{pco.path}PNW_PI_boosted_*.nc')
         # open all boosted realizations
         full_boost = xr.open_mfdataset(files,concat_dim ="case",combine="nested").Tx5d_anom
-        full_boost["case"] = [int(f[47:51]) for f in files]
-        self.full_simulation = full_boost.where(full_boost.case in read_parents(self.test_slice),drop=True).dropna(dim="time",how="all").load()
+        full_boost["case"] = [int(f[54:58]) for f in files]
+        self.full_simulation = full_boost.sel(case = read_parents(self.test_slice)).dropna(dim="time",how="all").load()
         self.TXx5d = self.full_simulation.max("time")
         
     def plot_boosted_PI(self,lead_time,ax):
         Tref,P_Tref = self.parent_sim.pref_tref()
         # calculate boosting estimator (with bootstrap)
         ret = rc.boosting_estimator(
-            self.TXx5d
+            self.TXx5d,
             lead_time, 
             Tref,
             P_Tref,
@@ -138,7 +141,7 @@ class boosted_PI_simulation():
         #plot median
         ret.median("bootstrap").plot.line(
             ".",
-            color=colors[2],
+            color=pco.colors[2],
             label=fr"Boosted simulations, $N_b = {len(ret)}$",
             markersize=3,
             y="T_ext",
@@ -149,10 +152,10 @@ class boosted_PI_simulation():
             ret.T_ext, 
             ret.quantile(0.025,"bootstrap"),
             ret.quantile(0.975,"bootstrap").fillna(10000000), # so that it counts the infs (up to 10^4 which is the figure limit)
-            color=colors[2],
+            color=pco.colors[2],
             alpha=0.5
         )
         ax.set_xscale('log')
         ax.set_xlim(.9,3e4)
         ax.set_ylim(6,14.2)
-        ax.axhline(Tref,linestyle="--",color=colors[2],label=r'$T_{\mathrm{ref}}$')
+        ax.axhline(Tref,linestyle="--",color=pco.colors[2],label=r'$T_{\mathrm{ref}}$')

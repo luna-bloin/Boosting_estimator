@@ -18,12 +18,12 @@ tref,ptref = test_slice.pref_tref()
 f,ax=plt.subplots(figsize=(7,1))
 ##plot non-boost
 test_slice.TXx5d.plot(
-    color="k", 
+    color=pco.colors[0], 
     label="Parent Ensemble",
     marker=".",
     linestyle=""
 )
-pc.set_grid(ax)
+pco.set_grid(ax)
 plt.ylabel("TXx5d [$^\circ$C]")
 plt.xlabel("Year")
 ax.text(
@@ -56,12 +56,12 @@ peak = parent.idxmax()
 parent["lead_time"] = parent.dayofyear-peak
 
 # open boosted parent
-boost_simulation_one_case = pi.boosted_PI_simulation().sel(case = str(parent_year))
+boost_simulation_one_case = pi.boosted_PI_simulation("T3").full_simulation.sel(case = parent_year)
 
 #plot boosted realizations
 lead_times = [-16,-12,-7]
 for i,dt in enumerate(lead_times):
-    boost_here = boost_simulation_one_case.groupby("time.season")["JJA"].groupby("time.dayofyear").mean()
+    boost_here = boost_simulation_one_case.groupby("time.season")["JJA"].groupby("time.dayofyear").mean().sel(start_date=dt)
     boost_here["lead_time"] = boost_here.dayofyear - peak
     boost_here.plot(
         x="lead_time",
@@ -74,7 +74,7 @@ for i,dt in enumerate(lead_times):
     parent_here = parent.where(parent.lead_time >= dt,drop=True).where(parent.lead_time <= dt+5,drop=True)
     parent_here.plot(
         x="lead_time", 
-        color=colors[2],
+        color=pco.colors[2],
         linewidth=1.2,
         ax=ax[i+2]
         )
@@ -96,7 +96,7 @@ for i in range(len(ax)):
     parent.plot(
         x="lead_time",
         ax=ax[i],
-        color=colors[0],
+        color=pco.colors[0],
         linewidth=1,
         zorder=3,
         label="Parent event"
@@ -110,16 +110,16 @@ for i in range(len(ax)):
     else:
         ax[i].set_xlabel("Lead time [days]")
     ax[i].set_ylabel("Tx5d anomaly [$^\circ$C]")
-    ax[i].axvline(0,color="k",linewidth=1)
+    ax[i].axvline(0,color=pco.colors[0],linewidth=1)
     if i != 0:
         ax[i].axvline(
-            start_dates[i-2],
-            color="k",
+            lead_times[i-2],
+            color=pco.colors[0],
             linestyle="--",
             linewidth=1
         )
 ax[0].legend(loc="lower left")
-ax[4].legend(handles = [Patch(facecolor=colors[2], label='Boosted batch')],loc="lower left")
+ax[4].legend(handles = [Patch(facecolor=pco.colors[2], label='Boosted batch')],loc="lower left")
 for i in [2,3]:
     ax[i].set_xticklabels([])
 plt.savefig(

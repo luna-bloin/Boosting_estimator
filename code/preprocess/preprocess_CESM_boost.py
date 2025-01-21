@@ -8,8 +8,8 @@ import preproc as pc
 import utils as ut
 
 cases_boosted = { 
-    "10:2017": [dt.date(2017, 7, 10), dt.date(2017, 7, 28)],
-    "10:2007": [dt.date(2007, 7, 13), dt.date(2007, 7, 28)],
+    #"10:2017": [dt.date(2017, 7, 10), dt.date(2017, 7, 28)],
+    #"10:2007": [dt.date(2007, 7, 13), dt.date(2007, 7, 28)],
     "29:2033": [dt.date(2033, 6, 23), dt.date(2033, 7, 4)],
     "06:2013": [dt.date(2013, 6, 5), dt.date(2013, 6, 30)],
     "12:2031": [dt.date(2031, 7, 1), dt.date(2031, 8, 24)],
@@ -47,15 +47,15 @@ for case in cases_boosted:
         print(current_date,len(files))
         if files != []:
             dates.append(current_date.timetuple().tm_yday)
-            with xr.open_mfdataset(files, preprocess=pc.preprocess,concat_dim="member", combine="nested",parallel=True) as ds:
-                print("opened")
-                members =  [int(fi[fi_len[0]:fi_len[1]]) for fi in files] # find the exact member number from the file (in case one is missing)
-                print(members)
-                ds["member"] = members
-                ds = ds.set_coords('member')
-                # add anomalies
-                ds["Tx5d_anom"] = ds.Tx5d.groupby("time.dayofyear")-clim
-                boost.append(ds.isel(time=slice(0,21)))
+            ds = xr.open_mfdataset(files, preprocess=pc.preprocess,concat_dim="member", combine="nested",parallel=True)
+            print("opened")
+            members =  [int(fi[fi_len[0]:fi_len[1]]) for fi in files] # find the exact member number from the file (in case one is missing)
+            print(members)
+            ds["member"] = members
+            ds = ds.set_coords('member')
+            # add anomalies
+            ds["Tx5d_anom"] = ds.Tx5d.groupby("time.dayofyear")-clim
+            boost.append(ds.isel(time=slice(0,21)))
         current_date += dt.timedelta(days=1)
     # gathering all lead times into one file
     boost=xr.concat(boost,dim="start_date")

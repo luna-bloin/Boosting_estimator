@@ -3,6 +3,7 @@
 #================================
 
 import matplotlib.pyplot as plt
+import sys
 sys.path.append("../utils")
 import return_calc as rc
 import plot_config as pco
@@ -23,12 +24,12 @@ for i,case in enumerate(TXx5d.case):
     to_plot = TXx5d.sel(start_date=slice(-18,-7),case=case)
     upper =  to_plot.quantile(0.95,dim="member")
     lower =  to_plot.quantile(0.05,dim="member")    
-    to_plot.median("member").plot(ax=ax[i],color=colors[2],zorder=3,label="Batch median")
-    ax[i].fill_between(to_plot.start_date,upper,lower,alpha=0.5,color=colors[2], label=r"$5^{\mathrm{th}} - 95^{\mathrm{th}}$ percentile values")
+    to_plot.median("member").plot(ax=ax[i],color=pco.colors[2],zorder=3,label="Batch median")
+    ax[i].fill_between(to_plot.start_date,upper,lower,alpha=0.5,color=pco.colors[2], label=r"$5^{\mathrm{th}} - 95^{\mathrm{th}}$ percentile values")
     # plot max boosted
-    to_plot.max("member").plot.line("+",color=colors[2],ax=ax[i],label = "Batch maximum")
+    to_plot.max("member").plot.line("+",color=pco.colors[2],ax=ax[i],label = "Batch maximum")
     # plot parent TXx5d
-    ax[i].axhline(parent.sel(year=str(case),linestyle="--",color=colors[1],label="Parent")
+    ax[i].axhline(parents.sel(year=case),linestyle="--",color=pco.colors[1],label="Parent")
     # fig configs
     if i < 5:
         ax[i].set_xlabel("")

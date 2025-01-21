@@ -26,7 +26,7 @@ for i,test_slice in enumerate(test_slices):
         #plot return periods for boosted
         boosted_simulation.plot_boosted_PI(lead_time_range,ax)
         #fig configs
-        ax.set_title(f"Test slice {i+1}: Lead times from {lead_time.start} to {lead_time.stop} days")
+        ax.set_title(f"Test slice {i+1}: Lead times from {lead_time_range.start} to {lead_time_range.stop} days")
         if x%2 == 0:
             ax.set_ylabel("TXx5d [$^\circ$C]")
         else:
@@ -37,7 +37,7 @@ for i,test_slice in enumerate(test_slices):
             ax.set_xlabel("")
         ax.text(0.025,0.92,r"$\textbf{"+string.ascii_lowercase[2*i + x]+r"}$",transform=ax.transAxes)
         pco.set_grid(ax)
-handles, labels = ax[0][0].get_legend_handles_labels()
+handles, labels = axs[0][0].get_legend_handles_labels()
 fig.legend(handles, labels, loc='lower center',ncol=4)
 plt.tight_layout()
 plt.subplots_adjust(bottom=0.2)

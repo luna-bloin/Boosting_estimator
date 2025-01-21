@@ -30,8 +30,7 @@ def compute_relative_error_ensemble_boosting_probability_estimator( N , p_Tref_i
     E_D_square = N_b * p_Tref_boost * ( 1 + ( N_b - 1 ) * p_Tref_boost )
     E_D_fourth = N_b * p_Tref_boost  + 4 * N_b * ( N_b - 1 ) * p_Tref_boost**2  +  6 * N_b * ( N_b - 1 ) * ( N_b - 2 ) * p_Tref_boost**3  +  ( N_b**4 - 6*N_b*(N_b-1)*(N_b-2) - 4*N_b*(N_b-1) - N_b ) * p_Tref_boost**4
     V_D_square = E_D_fourth - E_D_square**2
-    E_ND_square = N_b * p_Text_boost  + 2 * N_b * ( N_b - 1 ) * p_Text_boost * p_Tref_boost  +  2 * N_b * ( N_b - 1 ) * p_Text_boost**2  +  5 * N_b * ( N_b - 1 ) * ( N_b - 2 ) * p_Tref_boost * p_Text_boost**2  
-    +  N_b * ( N_b - 1 ) * ( N_b - 2 ) * p_Tref_boost**2 * p_Text_boost  +  ( N_b**4 - 6*N_b*(N_b-1)*(N_b-2) - 4*N_b*(N_b-1) - N_b ) * p_Tref_boost**2 * p_Text_boost**2
+    E_ND_square = N_b * p_Text_boost  + 2 * N_b * ( N_b - 1 ) * p_Text_boost * p_Tref_boost  +  2 * N_b * ( N_b - 1 ) * p_Text_boost**2  +  5 * N_b * ( N_b - 1 ) * ( N_b - 2 ) * p_Tref_boost * p_Text_boost**2  +  N_b * ( N_b - 1 ) * ( N_b - 2 ) * p_Tref_boost**2 * p_Text_boost  +  ( N_b**4 - 6*N_b*(N_b-1)*(N_b-2) - 4*N_b*(N_b-1) - N_b ) * p_Tref_boost**2 * p_Text_boost**2
     Cov_ND_square = E_ND_square - E_N_square * E_D_square
     E_p_Text_ini = p_Text_boost * p_Tref_ini / p_Tref_boost
 
@@ -109,4 +108,4 @@ handles, labels = axs[0].get_legend_handles_labels()
 f.legend(handles, labels, loc='lower center',ncol=3)
 plt.tight_layout()
 plt.subplots_adjust(bottom=0.3)
-plt.savefig(f"{pco.out_path}Fig3_theoretical_relative_error.png",bbox_inches="tight",transparent=True,dpi=600)
+plt.savefig(f"{pco.out_path}Fig3_theoretical_relative_error.png",bbox_inches="tight")

@@ -25,7 +25,7 @@ def gev_return_lev_for_time_series(data,max_return_time):
     # Define return times, including beyond the dataset
     start = len(data)/(len(data)-1) # start at second point in data set
     return_times = np.logspace(np.log10(start), np.log10(max_return_time+1),num=1000)  # From 1-year to `max_return_time`-year return times
-    return_levels = return_level(shape, loc, scale, return_times)
+    return_levels = gev_return_level(shape, loc, scale, return_times)
     return return_levels
 
 def return_time_bootstrap(data,bootstrap = 1,max_return_time = 100000):
@@ -35,7 +35,7 @@ def return_time_bootstrap(data,bootstrap = 1,max_return_time = 100000):
     bootstrap_data = xr.DataArray(data=bootstrap_data,coords={"bootstrap":range(bootstrap),"year":data.year})
     for i in tqdm(range(bootstrap)):
         selected_years = bootstrap_data.sel(bootstrap=i)
-        new_maxes.append(return_lev_for_time_series(selected_years,max_return_time))
+        new_maxes.append(gev_return_lev_for_time_series(selected_years,max_return_time))
     
     start = len(data)/(len(data)-1) # start at second point in data set
     sorted_new_maxes = xr.DataArray(
@@ -74,10 +74,14 @@ def boosting_estimator(TXx5d, lead_time, Tref, P_Tref, bootstrap=1000):
     if lead_time == None:
         TXx5d = TXx5d.stack(dim=("case","member","start_date")).dropna(dim="dim")
     else:
-        TXx5d = TXx5d.sel(start_date=lead_time).stack(dim=("case","member")).dropna(dim="dim")
+        TXx5d = TXx5d.sel(start_date=lead_time)
+        if type(lead_time) == slice: # if we selected a range of lead times we need to stack the lead times too
+            TXx5d = TXx5d.stack(dim=("case","member","start_date")).dropna(dim="dim")
+        else:
+            TXx5d = TXx5d.stack(dim=("case","member")).dropna(dim="dim")
     # find all TXx5d above Tref
     above_Tref_all = TXx5d.where(TXx5d>= Tref,drop=True)
-    T_ext_all = boost_above_Tref_all.sortby(boost_above_Tref_all,ascending=False)
+    T_ext_all = above_Tref_all.sortby(above_Tref_all,ascending=False)
     
     bootstrap_TXx5d = xr.DataArray(data = rng.choice(TXx5d, size=(bootstrap, len(TXx5d)), replace=True))
     return_times_T_ext = []
@@ -86,7 +90,7 @@ def boosting_estimator(TXx5d, lead_time, Tref, P_Tref, bootstrap=1000):
     # loop over all T_ext (>= Tref) values to calculate probability
     for text in tqdm(T_ext_all):
         # find P(T_ext|AC)
-        P_Text_AC = bootstrap_TXx5d.where(bootstrap_TXx5d>= text).count(dim="dim_1").values / bootstrap_here.count(dim="dim_1").values
+        P_Text_AC = bootstrap_TXx5d.where(bootstrap_TXx5d>= text).count(dim="dim_1").values / bootstrap_TXx5d.count(dim="dim_1").values
         #find P(T_ext)
         P_Text = (P_Tref * (P_Text_AC/P_Tref_AC))
         return_times_T_ext.append(1/P_Text)
@@ -109,18 +113,18 @@ def find_trefAC(TXx5d,lead_time,Tref,bootstrap = 1):
     Returns:
         P_Tref_AC (list): list of bootstrapped values of P(Tref | AC)
     """
-    if ld == None:
-        boost_here = boost_here.stack(dim=("case","member","start_date")).dropna(dim="dim")
+    if lead_time == None:
+        TXx5d = TXx5d.stack(dim=("case","member","start_date")).dropna(dim="dim")
     else:
-        boost_here = boost_here.sel(start_date=ld).stack(dim=("case","member")).dropna(dim="dim")    
+        TXx5d = TXx5d.sel(start_date=lead_time).stack(dim=("case","member")).dropna(dim="dim")    
     if bootstrap == 1:
-        boost_above_Tref = boost_here.where(boost_here>= Tref,drop=True)
-        P_Tref_AC = boost_above_Tref.count().values/boost_here.count().values 
+        boost_above_Tref = TXx5d.where(TXx5d>= Tref,drop=True)
+        P_Tref_AC = boost_above_Tref.count().values/TXx5d.count().values 
     else:
-        bootstrap_here = xr.DataArray(data = rng.choice(boost_here, size=(bootstrap, len(boost_here)), replace=True))
+        bootstrap_TXx5d = xr.DataArray(data = rng.choice(TXx5d, size=(bootstrap, len(TXx5d)), replace=True))
         P_Tref_AC = []
         for i in range(bootstrap):
-            boost_above_Tref = bootstrap_here[i].where(bootstrap_here[i]>= Tref,drop=True)
-            P_Tref_AC.append(boost_above_Tref.count().values/boost_here.count().values )
+            boost_above_Tref = bootstrap_TXx5d[i].where(bootstrap_TXx5d[i]>= Tref,drop=True)
+            P_Tref_AC.append(boost_above_Tref.count().values/TXx5d.count().values )
     return P_Tref_AC
 

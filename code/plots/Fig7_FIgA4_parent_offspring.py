@@ -3,12 +3,15 @@
 #================================================================================
 
 import matplotlib.pyplot as plt
+import sys
 sys.path.append("../utils")
-import return_calc as rc
 import plot_config as pco
 import PI_runs_parent_boosted as pi
-import utils as ut
 import string
+import numpy as np
+from matplotlib.patches import Patch
+from scipy.stats import spearmanr
+
 
 # === Fig 7 ===
 f,ax = plt.subplots(1,2,figsize=(7,3.25),sharey=True)
@@ -20,7 +23,7 @@ for j, test_slice in enumerate(test_slices): #plot for test slice 1 and 2
     for i,case in enumerate(parents.year):
         vals = boosted_simulation.TXx5d.sel(start_date=slice(-18,-13)).stack(dim=("start_date","member")).sel(case=int(case))
         # append 90th percentile TXx5d of boosted values, and TXx5d of parent for each parent event
-        vals_90th_percentile_boost_parent.append([vals.quantile(0.9).values,case.values])
+        vals_90th_percentile_boost_parent.append([vals.quantile(0.9).values,parents.sel(year=case).values])
         #boxplot
         ax[j].boxplot(
             vals.values[~np.isnan(vals.values)],
@@ -30,28 +33,32 @@ for j, test_slice in enumerate(test_slices): #plot for test slice 1 and 2
             capprops = dict(linewidth=0.75), 
             flierprops = dict(markersize=3, linewidth=0.75), 
             medianprops=dict(linewidth=0.75,color=pco.colors[0]),
-            boxprops=dict(linewidth=0.75,facecolor=color2_with_alpha, edgecolor="k",color=pco.colors[0]),
+            boxprops=dict(linewidth=0.75,facecolor=pco.color2_with_alpha, edgecolor="k",color=pco.colors[0]),
         )
-        # plot parent
-        pco.plot_parents(
-            ax[j],
-            i, 
-            boosted_PI_simulation.parent_sim.TXx5d.sel(year=case),
-        )
+        
         #fig configs
         if i == 0:
-            lab = "Parent event"
+            lab = True
             lab_1 = "95$^{\mathrm{th}}$ percentile of boosted simulations"
         else:
             lab = "__no"
             lab_1 = "__no"
-        ax[j].set_xticks(range(len(parents[tim])),[f"Parent {i+1}" for i in range(len(parents[tim]))], rotation = 0)
-        pco.set_grid(ax)
+
+        # plot parent
+        pco.plot_parents(
+            ax[j],
+            i, 
+            boosted_simulation.parent_sim.TXx5d.sel(year=case),
+            label=lab
+        )
+        #more configs
+        ax[j].set_xticks(range(len(parents)),[f"Parent {i+1}" for i in range(len(parents))], rotation = 0)
+        pco.set_grid(ax[j])
         ax[j].set_title(f"Test slice {j+1}")
     ax[j].text(0.025,0.94,r"$\textbf{"+string.ascii_lowercase[j]+r"}$",transform=ax[j].transAxes)
 ax[0].set_ylabel("TXx5d [$^\circ$C]")
 # legend and fig configs
-legend_elements = [Patch(facecolor=pco.color2_with_alpha,edgecolor="k", label='Boosted simulations')]
+legend_elements = [Patch(facecolor=pco.color2_with_alpha,edgecolor=pco.colors[0], label='Boosted simulations')]
 handles, labels = ax[0].get_legend_handles_labels()
 combined_handles = handles + legend_elements
 f.legend(handles=combined_handles, loc='lower center',ncol=2)
@@ -74,7 +81,7 @@ ax.plot(
 )
 #plot x=y line
 x = np.linspace(8,12)
-ax.plot(x,x,label="x=y",color="k")
+ax.plot(x,x,label="x=y",color=pco.colors[0])
 #fig configs
 ax.set_ylabel("$P_{90}$ boosted TXx5d [$^\circ$C]")
 ax.set_xlabel("Parent TXx5d [$^\circ$C]")

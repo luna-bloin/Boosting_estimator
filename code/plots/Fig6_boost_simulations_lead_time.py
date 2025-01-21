@@ -3,12 +3,15 @@
 # ========================================================================================================================
 
 import matplotlib.pyplot as plt
+import sys
 sys.path.append("../utils")
 import return_calc as rc
 import plot_config as pco
 import PI_runs_parent_boosted as pi
 import utils as ut
 import string
+from tqdm import tqdm
+import xarray as xr
 
 # === Necessary functions ===
 def get_spread_time_data(boost):
@@ -46,7 +49,7 @@ f,axs = plt.subplots(1,2,figsize=(7,3.25))
 # === Panel a: spread and saturation plot ===
 ax = axs[0]
 # find climatological standard deviation
-le_std_dev = pi.PI_simulation().full_simulation.groupby("time.season")["JJA"].groupby("time.dayofyear").std(("time")).mean()
+le_std_dev = pi.PI_simulation(test_slice="T0").full_simulation.groupby("time.season")["JJA"].groupby("time.dayofyear").std(("time")).mean()
 
 test_slices = ["T1","T2"]
 for x,test_slice in enumerate(test_slices): #plot for test slice 1 and 2
@@ -59,7 +62,7 @@ for x,test_slice in enumerate(test_slices): #plot for test slice 1 and 2
     to_plot.median("case").plot(
         ax=ax,
         label=f"Test slice {x+1}",
-        color=colors[x+1]
+        color=pco.colors[x+1]
     )
     #upper and lower bound
     ax.fill_between(
@@ -73,7 +76,7 @@ for x,test_slice in enumerate(test_slices): #plot for test slice 1 and 2
 ax.axhline(
     1,
     linestyle="dotted", 
-    color="k",
+    color=pco.colors[0],
     alpha=0.7
 )
 ax.set_xlabel("Days since perturbation")
@@ -94,14 +97,14 @@ ax = axs[1]
 bt = 1000 #bootstrap
 lead_times = range(-18,-6)
 for i,test_slice in enumerate(test_slices): #plot for test slice 1 and 2
-    Tref,P_Tref = pref_tref(tim,PIs)
-    boost_here = get_boost(tim,boost)
+    boosted_simulation = pi.boosted_PI_simulation(test_slice=test_slice)
+    Tref = boosted_simulation.parent_sim.pref_tref()[0]
     # find P(Tref|AC) for all lead times and plot this (with boostrapped error bars)
     p_tref_acs = []
     for lead_time in tqdm(lead_times):
         p_tref_acs.append(
             rc.find_trefAC(
-                TXx5d,
+                boosted_simulation.TXx5d,
                 lead_time,
                 Tref,
                 bootstrap = bt

@@ -55,7 +55,7 @@ test_slices = ["T1","T2"]
 for x,test_slice in enumerate(test_slices): #plot for test slice 1 and 2
     boosted_simulation = pi.boosted_PI_simulation(test_slice=test_slice)
     # create new data array, with time since initialization (spread time) instead of time
-    spread_time_data = get_spread_time_data(boosted_simulation.full_simulation)
+    spread_time_data = get_spread_time_data(boosted_simulation.full_simulation.Tx5d_anom_full)
     # plot std dev divided by climatological std dev
     to_plot = spread_time_data.std(dim="ID")/le_std_dev
     #median
@@ -84,11 +84,7 @@ ax.set_ylabel(r"Standard deviation relative to climatology")
 ax.set_title(r"Spread of boosted simulations with time")
 ax.set_xlim(0,None)
 ax.set_ylim(0,None)
-for i,ax in enumerate(axs):
-    pco.set_grid(ax)
-    ax.legend(loc="lower right")
-    ax.text(0.025,0.94,r"$\textbf{"+string.ascii_lowercase[i]+r"}$",transform=ax.transAxes)
-plt.tight_layout()
+ax.set_xticks([0,10,20,30,40,50])
 
 
 # === Panel b: Ptref AC plot ===
@@ -131,5 +127,12 @@ ax.set_xlabel("Lead time [days]")
 ax.set_ylabel(r"$\hat{p}_{T \geq T_{\mathrm{ref}} \ | \ \mathrm{AC}_t^\epsilon}$")
 ax.set_title(r"Effect of lead time on $\hat{p}_{T \geq T_{\mathrm{ref}} \ | \ \mathrm{AC}_t^\epsilon}$")
 ax.set_xticks([-17,-14,-11,-8])
+for i,ax in enumerate(axs):
+    pco.set_grid(ax)
+    ax.legend(loc="lower right")
+    ax.text(0.025,0.94,r"$\textbf{"+string.ascii_lowercase[i]+r"}$",transform=ax.transAxes)
+
+pco.convert_ticklabels_to_strings(f)
+plt.tight_layout()
 
 plt.savefig(f"{pco.out_path}Fig6_lead_time_effect.png",bbox_inches="tight")

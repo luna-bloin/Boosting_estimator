@@ -13,6 +13,7 @@ import plot_config as pco
 plt.rcParams['xtick.top'] = False
 plt.rcParams['ytick.right'] = False
 plt.rcParams['text.latex.preamble']= r'\usepackage{amsfonts}'
+plt.rcParams['lines.linewidth'] = 0.75
 linestyles = ["-","--","dotted"]
 
 ## Relative error function
@@ -64,7 +65,7 @@ for i,p_Tref_boost in enumerate([0.75,0.3]): # probability to be above T_ref in 
         ax.plot( 
             p_Text_ini, 
             relative_error_boost * 100, 
-            label=fr"Boosting, $N=50, N_b = {N_b}$",
+            label=fr"Boosting, $N=$ 50, $N_b$ = {(N_b)}",
             color=pco.colors[2],
             linestyle=linestyles[x]
         )
@@ -75,29 +76,29 @@ for i,p_Tref_boost in enumerate([0.75,0.3]): # probability to be above T_ref in 
             p_Text_ini, 
             relative_error_naive_estimator * 100, 
             color=pco.colors[1], 
-            label=fr"Naive, $N= {N}+{int(N_b/(100/21))}$",
+            label=fr"Naive, $N$= {(N)}+{(int(N_b/(100/21)))}",
             linestyle=linestyles[x]
         )
         # print naive estimator with N = 50 and N= 4000 (placed here so they appear correctly on the legend)
         if x < 2:
             #full PI-control simulation
-            if x == 0:
+            if x == 1:
                 N = 4000
-            elif x ==1:
+            elif x ==0:
                 N=50
             relative_error_naive_estimator = np.sqrt( p_Text_ini * ( 1 - p_Text_ini ) / N ) / p_Text_ini
             ax.plot( 
                 p_Text_ini, 
                 relative_error_naive_estimator * 100, 
                 color=pco.colors[0], 
-                label=fr"Naive, $N= {N}$",
+                label=fr"Naive, $N=$ {N}",
                 linestyle=linestyles[x]
             )
     # figure parameters     
     if i == 0:
         ax.set_ylabel('Relative error [\%]')
     ax.set_xlabel('$\hat{p}_{T \geq T_{\mathrm{ext}}}$')    
-    ax.set_title(r"$\hat{p}_{T\geq T_{\mathrm{ref}} | \mathrm{AC}_t^{\epsilon}}="+ str(p_Tref_boost)+ r"$")
+    ax.set_title(r"$\hat{p}_{T\geq T_{\mathrm{ref}} | \mathrm{AC}_t^{\epsilon}}$="+ str(p_Tref_boost))
     ax.text(0.025,0.92,r"\textbf{"+string.ascii_lowercase[i]+r"}",transform=ax.transAxes)
     ax.set_ylim( 0 , 105 )
     ax.set_xlim( 5*0.0001 ,0.1)
@@ -108,4 +109,5 @@ handles, labels = axs[0].get_legend_handles_labels()
 f.legend(handles, labels, loc='lower center',ncol=3)
 plt.tight_layout()
 plt.subplots_adjust(bottom=0.3)
+pco.convert_ticklabels_to_strings(f,scientificx=True)
 plt.savefig(f"{pco.out_path}Fig3_theoretical_relative_error.png",bbox_inches="tight")

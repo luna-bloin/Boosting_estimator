@@ -13,10 +13,10 @@ time_periods = {
     "T2": [1851,1900],
 }
 
-plot_labels = {"T0":r"Control period: $N =4000$",
-          "T1":'Test slice: $N = 50$',
-          "T2":'Test slice: $N = 50$',
-          "T3":'Test slice: $N = 100$',
+plot_labels = {"T0":r"Control period: $N$ =4000",
+          "T1":'Test slice: $N$ = 50',
+          "T2":'Test slice: $N$ = 50',
+          "T3":'Test slice: $N$ = 100',
          }
 
 def read_parents(test_slice):
@@ -55,22 +55,21 @@ class PI_simulation():
         else:
             self.full_simulation = xr.open_dataset(f"{pco.path}PNW_PI_test_slice_{self.test_slice}.nc").Tx5d_anom
         self.TXx5d = self.full_simulation.groupby("time.season")["JJA"].groupby("time.year").max("time")
-        # find return time for all TXx5d
-        self.bootstrapped_GEV = rc.return_time_bootstrap(self.TXx5d,bootstrap = 1000)
         # Only the TXx5d of the years that are selected to be boosted
         if test_slice != "T0":
             self.parents = self.TXx5d.sel(year=read_parents(self.test_slice))
-
+    def bootstrapped_GEV(self):
+        # find return time for all TXx5d
+        return rc.return_time_bootstrap(self.TXx5d,bootstrap = 1000)
     def pref_tref(self):
         # find Tref and its probability
         if self.test_slice != "T3":
             top = 4
             Tref = self.TXx5d.sortby(self.TXx5d ,ascending=False)[top] # 5th highest value
-            P_Tref = 0.1 #by construction 
         else: # if test slice == T3, Tref is the minimum of Tref from T1, T2, and Ptref must be calculated
             year = min([PI_simulation(test_slice = t).pref_tref()[0] for t in ["T1","T2"]]).year
             Tref = self.TXx5d.where(self.TXx5d.year == year, drop=True).squeeze("year")
-            P_Tref = (self.TXx5d.where(self.TXx5d>=Tref,drop=True).count()/self.TXx5d.count()).values
+        P_Tref = rc.find_proba_naive(self.TXx5d,Tref,bootstrap=1000 )#self.TXx5d.where(self.TXx5d>=Tref,drop=True).count()/self.TXx5d.count()).values
         return Tref, P_Tref
 
     def calculate_and_plot_return_period(self,ax):
@@ -78,7 +77,7 @@ class PI_simulation():
         for j,pi_sim in enumerate([PI_simulation(test_slice="T0"),self]):
             pco.plot_return(
                 pi_sim.TXx5d,
-                pi_sim.bootstrapped_GEV,
+                pi_sim.bootstrapped_GEV(),
                 plot_labels[pi_sim.test_slice],
                 ax,
                 color=pco.colors[j],
@@ -90,14 +89,15 @@ class PI_simulation():
             for i,time_slice in enumerate(["T1","T2"]):
                 for j,parent in enumerate(self.parents):
                     if i == 0 and j == 0:
-                        lab = "Parent Events"
+                        label = True
                     else:
-                        lab = "_nolab"
+                        label = False
                     index = len(self.TXx5d.where(self.TXx5d >= parent.values,drop=True))
                     pco.plot_parents(
                         ax,
                         rc.naive_estimator(self.TXx5d)[0][index-1],
                         parent.values,
+                        label = label
                     )
         else:
             return_times,return_levels = rc.naive_estimator(self.TXx5d)
@@ -124,10 +124,10 @@ class boosted_PI_simulation():
         # opening boosted runs
         files = glob(f'{pco.path}PNW_PI_boosted_*.nc')
         # open all boosted realizations
-        full_boost = xr.open_mfdataset(files,concat_dim ="case",combine="nested").Tx5d_anom
+        full_boost = xr.open_mfdataset(files,concat_dim ="case",combine="nested")
         full_boost["case"] = [int(f[54:58]) for f in files]
         self.full_simulation = full_boost.sel(case = read_parents(self.test_slice)).dropna(dim="time",how="all").load()
-        self.TXx5d = self.full_simulation.max("time")
+        self.TXx5d = self.full_simulation.Tx5d_anom.max("time")
         
     def plot_boosted_PI(self,lead_time,ax):
         Tref,P_Tref = self.parent_sim.pref_tref()
@@ -142,7 +142,7 @@ class boosted_PI_simulation():
         ret.median("bootstrap").plot.line(
             ".",
             color=pco.colors[2],
-            label=fr"Boosted simulations, $N_b = {len(ret)}$",
+            label=r"Boosted simulations, $N_b$ =" + str(self.TXx5d.sel(start_date=lead_time).count().values),
             markersize=3,
             y="T_ext",
             ax=ax

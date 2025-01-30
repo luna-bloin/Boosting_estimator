@@ -62,6 +62,7 @@ legend_elements = [Patch(facecolor=pco.color2_with_alpha,edgecolor=pco.colors[0]
 handles, labels = ax[0].get_legend_handles_labels()
 combined_handles = handles + legend_elements
 f.legend(handles=combined_handles, loc='lower center',ncol=2)
+pco.convert_ticklabels_to_strings(f,only_y=True)
 plt.tight_layout()
 plt.subplots_adjust(bottom=0.17)
 plt.savefig(f"{pco.out_path}Fig7_PI_heatwave_parent_offspring_boxplot.png", bbox_inches="tight")
@@ -91,4 +92,5 @@ plt.tight_layout()
 ax.set_xlim(8.5,12)
 ax.set_ylim(8.5,12)
 ax.set_xticks(np.arange(9,12.5,0.5))
+pco.convert_ticklabels_to_strings(f)
 plt.savefig(f"{pco.out_path}FigA4_correlation_parent_boosted.png", bbox_inches="tight")

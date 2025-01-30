@@ -52,6 +52,25 @@ def naive_estimator(TXx5d):
     return_levels_sorted = TXx5d.sortby(TXx5d,ascending=False)
     return_times = len(TXx5d)/np.arange(1, len(TXx5d) + 1)
     return return_times, return_levels_sorted
+
+def find_return_time_naive_gev(dataset,return_level,bootstrap=1000):
+    bootstrapped_dataset= xr.DataArray(data = rng.choice(dataset, size=(bootstrap, len(dataset)), replace=True))
+    bootstrap_return_time = []
+    for i in tqdm(range(bootstrap)):
+        shape, loc, scale = fit_gev(bootstrapped_dataset.sel(dim_0=i))
+        prob = (1-gev.cdf(return_level, shape, loc=loc, scale=scale))
+        if prob == 0:
+            ret = float('inf')
+        else:
+            ret = 1/prob
+        bootstrap_return_time.append(ret)
+    print(f"{np.median(bootstrap_return_time):.5},{np.quantile(bootstrap_return_time,0.025):.5},{np.quantile(bootstrap_return_time,0.975):.5}")
+    return bootstrap_return_time
+
+def find_proba_naive(dataset,return_level,bootstrap=1000):
+    bootstrapped_dataset= xr.DataArray(data = rng.choice(dataset, size=(bootstrap, len(dataset)), replace=True))
+    proba = (bootstrapped_dataset.where(bootstrapped_dataset >=return_level).count(("dim_1"))/bootstrapped_dataset.count(("dim_1"))).values
+    return proba
     
 # ===============================================================================
 # === Functions for boosting return time estimation (non-boosted simulations) ===
@@ -93,6 +112,7 @@ def boosting_estimator(TXx5d, lead_time, Tref, P_Tref, bootstrap=1000):
         P_Text_AC = bootstrap_TXx5d.where(bootstrap_TXx5d>= text).count(dim="dim_1").values / bootstrap_TXx5d.count(dim="dim_1").values
         #find P(T_ext)
         P_Text = (P_Tref * (P_Text_AC/P_Tref_AC))
+        P_Text = np.where(P_Text != 0, P_Text,1e-10)
         return_times_T_ext.append(1/P_Text)
     return_times_T_ext = xr.DataArray(data = return_times_T_ext, dims=["T_ext","bootstrap"],
     coords=dict(
@@ -128,3 +148,11 @@ def find_trefAC(TXx5d,lead_time,Tref,bootstrap = 1):
             P_Tref_AC.append(boost_above_Tref.count().values/TXx5d.count().values )
     return P_Tref_AC
 
+def find_return_time_boost(P_Tref, Tref, dataset,return_level,bootstrap=1000):
+    bootstrapped_dataset= xr.DataArray(data = rng.choice(dataset, size=(bootstrap, len(dataset)), replace=True))
+    PTref_AC = bootstrapped_dataset.where(bootstrapped_dataset> Tref).count(dim="dim_1")
+    PText_AC = bootstrapped_dataset.where(bootstrapped_dataset> return_level).count(dim="dim_1")
+    probability = P_Tref * (PText_AC / PTref_AC)
+    bootstrap_return_time = (1/probability).values
+    print(f"{np.median(bootstrap_return_time):.5},{np.quantile(bootstrap_return_time,0.025):.5},{np.quantile(bootstrap_return_time,0.975):.5}")
+    return bootstrap_return_time

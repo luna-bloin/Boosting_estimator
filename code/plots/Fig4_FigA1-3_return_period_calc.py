@@ -41,6 +41,7 @@ handles, labels = axs[0][0].get_legend_handles_labels()
 fig.legend(handles, labels, loc='lower center',ncol=4)
 plt.tight_layout()
 plt.subplots_adjust(bottom=0.2)
+pco.convert_ticklabels_to_strings(fig,scientificx=True)
 plt.savefig(f"{pco.out_path}Fig4_boosted_return_times.png",bbox_inches="tight")
 
 # === Fig A1 and A2 ===
@@ -76,6 +77,7 @@ for test_slice in test_slices:
     fig.legend(handles, labels, loc='lower center',ncol=3)
     plt.tight_layout()
     plt.subplots_adjust(bottom=0.18)
+    pco.convert_ticklabels_to_strings(fig,scientificx=True)
     plt.savefig(f"{pco.out_path}FigA{test_slice[1]}_boosted_return_times_lead_by_lead.png",bbox_inches="tight")
 
 # === Fig A3 ===
@@ -86,14 +88,14 @@ fig,axs = plt.subplots(1,2,figsize = (7,3.25),sharex=True,sharey=True)
 lead_times = [slice(-18,-13),slice(-12,-7)]
 # get return times for non-boosted
 boosted_simulation = pi.boosted_PI_simulation(test_slice=test_slice)
-for x,lead_time in enumerate(lead_times):
+for x,lead_time_range in enumerate(lead_times):
     ax = axs[x]
     #plot return periods for parents
     boosted_simulation.parent_sim.calculate_and_plot_return_period(ax)
     #plot return periods for boosted
     boosted_simulation.plot_boosted_PI(lead_time_range,ax)
     #fig config
-    ax.set_title(f"Test slice 1 + 2: Lead times ({lead_time.start}, {lead_time.stop}) days")
+    ax.set_title(f"Test slice 1 + 2: Lead times ({lead_time_range.start}, {lead_time_range.stop}) days")
     if x%2 == 0:
         ax.set_ylabel("TXx5d [$^\circ$C]")
     else:
@@ -101,8 +103,9 @@ for x,lead_time in enumerate(lead_times):
     ax.set_xlabel("Return period [year]")
     ax.text(0.025,0.94,r"$\textbf{"+string.ascii_lowercase[x]+r"}$",transform=ax.transAxes)
     pco.set_grid(ax)
-handles, label = ax[0].get_legend_handles_labels()
+handles, label = axs[0].get_legend_handles_labels()
 fig.legend(handles, label, loc='lower center',ncol=3)
 plt.tight_layout()
 plt.subplots_adjust(bottom=0.32)
+pco.convert_ticklabels_to_strings(fig,scientificx=True)
 plt.savefig(f"{pco.out_path}FigA3_boosted_return_times_{test_slice}.png",bbox_inches="tight")

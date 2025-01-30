@@ -25,7 +25,7 @@ for i,case in enumerate(TXx5d.case):
     upper =  to_plot.quantile(0.95,dim="member")
     lower =  to_plot.quantile(0.05,dim="member")    
     to_plot.median("member").plot(ax=ax[i],color=pco.colors[2],zorder=3,label="Batch median")
-    ax[i].fill_between(to_plot.start_date,upper,lower,alpha=0.5,color=pco.colors[2], label=r"$5^{\mathrm{th}} - 95^{\mathrm{th}}$ percentile values")
+    ax[i].fill_between(to_plot.start_date,upper,lower,alpha=0.5,color=pco.colors[2], label=r"5$^{\mathrm{th}} - $ 95$^{\mathrm{th}}$ percentile values")
     # plot max boosted
     to_plot.max("member").plot.line("+",color=pco.colors[2],ax=ax[i],label = "Batch maximum")
     # plot parent TXx5d
@@ -51,4 +51,5 @@ f.text(0.5, 0.95, "Test slice 1", ha='center', fontsize=14)
 f.text(0.5, 0.51, "Test slice 2", ha='center', fontsize=14)
 plt.tight_layout(rect=[0, 0.42, 1, 0.95])
 plt.subplots_adjust(bottom=0.21)
+pco.convert_ticklabels_to_strings(f)
 plt.savefig(f"{pco.out_path}Fig5_hummingbird.png", bbox_inches="tight")

@@ -23,7 +23,7 @@ test_slice.TXx5d.plot(
     marker=".",
     linestyle=""
 )
-pco.set_grid(ax)
+ax.grid(linestyle='dotted', linewidth=0.15)
 plt.ylabel("TXx5d [$^\circ$C]")
 plt.xlabel("Year")
 ax.text(
@@ -32,6 +32,7 @@ ax.text(
     r"$\textbf{"+string.ascii_lowercase[0]+r"}$",
     transform=ax.transAxes
 )
+pco.convert_ticklabels_to_strings(f)
 plt.savefig(
     f"{pco.out_path}illustration_annual_max.svg",
     transparent=True,
@@ -56,7 +57,7 @@ peak = parent.idxmax()
 parent["lead_time"] = parent.dayofyear-peak
 
 # open boosted parent
-boost_simulation_one_case = pi.boosted_PI_simulation("T3").full_simulation.sel(case = parent_year)
+boost_simulation_one_case = pi.boosted_PI_simulation("T3").full_simulation.Tx5d_anom.sel(case = parent_year)
 
 #plot boosted realizations
 lead_times = [-16,-12,-7]
@@ -102,7 +103,7 @@ for i in range(len(ax)):
         label="Parent event"
     ) 
     #fig configs
-    pco.set_grid(ax[i])
+    ax[i].grid(linestyle='dotted', linewidth=0.15)
     ax[i].set_xlim(-17,15)
     ax[i].set_title("")
     if i < 4 and i !=0:
@@ -120,6 +121,7 @@ for i in range(len(ax)):
         )
 ax[0].legend(loc="lower left")
 ax[4].legend(handles = [Patch(facecolor=pco.colors[2], label='Boosted batch')],loc="lower left")
+pco.convert_ticklabels_to_strings(f)
 for i in [2,3]:
     ax[i].set_xticklabels([])
 plt.savefig(

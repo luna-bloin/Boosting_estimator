@@ -4,6 +4,7 @@ import datetime as dt
 import sys
 sys.path.append("../utils")
 import preproc as pc
+import numpy as np
 
 
 # === Preprocess boosted runs, resulting from PiControl_select.ipynb, in same way ===
@@ -24,10 +25,22 @@ cases_boosted = {
         "1856-08-07": ["1856-07-20", "1856-07-31"],
     },
 }
+# code to select only 21 first days of each boosted simulation
+def shorten_each_time_slice(x,length=21):
+    orig_len = len(x)
+    x_non_nan = x[~np.isnan(x)]
+    if len(x_non_nan) == 0:
+        print("all nan")
+        return x
+    else:
+        index_of_first_val = np.where(~np.isnan(x))[0][0]
+        x_new = x_non_nan[0:length] # only 21 first days
+        x_padded = np.pad(x_new, (index_of_first_val, orig_len-index_of_first_val-length),'constant', constant_values=(np.nan,np.nan))
+        return x_padded
 
 for tim in cases_boosted:
     print(tim)
-    clim_tim = xr.open_dataset(f'{pc.output_path}PI_test_slice_{tim}.nc').Tx5d.rolling(time=30,center=True).mean().groupby("time.dayofyear").mean()
+    clim_tim = xr.open_dataset(f'{pc.output_path}PNW_PI_test_slice_{tim}.nc').Tx5d.rolling(time=30,center=True).mean().groupby("time.dayofyear").mean()
     for case in cases_boosted[tim]:
         print(case)
         # loop over all dates for each case
@@ -44,16 +57,23 @@ for tim in cases_boosted:
             h1_filenames_boost = sorted(glob.glob(f"/net/meso/climphys/cesm212/boosting_piControl/archive/B1850cmip6.1000001.{current_date}*/atm/hist/B1850cmip6.1000001.{current_date}*.cam.h1.*-00000.nc"))
             members = [int(ls[87:90]) for ls in h1_filenames_boost] # find the exact member number from the file (in case one is missing)
             if h1_filenames_boost != []:
-                ds = xr.open_mfdataset(h1_filenames_boost,combine="nested", concat_dim="member", coords='minimal',preprocess=pc.preprocess).isel(time=slice(0,21))
+                ds = xr.open_mfdataset(h1_filenames_boost,combine="nested", concat_dim="member", coords='minimal',preprocess=pc.preprocess)
                 print("opened")
                 ds["member"] = members
                 # add anomalies
-                ds["Tx5d_anom"] = ds.Tx5d.groupby("time.dayofyear")-clim_tim
+                ds["Tx5d_anom_full"] = ds.Tx5d.groupby("time.dayofyear")-clim_tim
                 boost.append(ds)
                 # next date
                 dates.append(current_date)
             current_date += dt.timedelta(days=1)
         boost = xr.concat(boost,dim="start_date")
         boost["start_date"] = [int((dt - peak_date).days) for dt in dates]
+        boost["Tx5d_anom"] = xr.apply_ufunc(
+            shorten_each_time_slice, 
+            boost.Tx5d_anom_full.load(),
+            input_core_dims=[["time"]],
+            output_core_dims=[["time"]],
+            vectorize=True,
+        )
         boost.to_netcdf(f'{pc.output_path}PNW_PI_boosted_{case}.nc')
         print("saved")

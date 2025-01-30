@@ -105,9 +105,10 @@ ax = axs.flatten()
 lead_time_range = slice(-18,-13)
 
 # get a list of top parents sorted by intensity
+boosted_simulation = le.boosted_LE_simulation()
 parents = boosted_simulation.parent_sim.find_parents()
 parents = parents.sortby(parents, ascending=False)
-parent_list = [[f"{el.member.item()}:{el.dim.item()}"] for el in parents]
+parent_list = [[f"{el.member.item():02d}:{el.dim.item()}"] for el in parents]
 parent_list.insert(0,[])
 
 for i,drop_case in enumerate(parent_list):
@@ -128,7 +129,6 @@ for i,drop_case in enumerate(parent_list):
         parent_val = top_events.where(top_events.member == mem,drop=True).where(top_events.dim == year,drop=True).values
         parent_rank = len(top_events.where(top_events >= parent_val,drop=True))
     #fig configs
-    ax[i].set_title(tit[i])
     if i%2 == 0:
         ax[i].set_ylabel("TXx5d [$^\circ$C]")
     else:
@@ -137,7 +137,7 @@ for i,drop_case in enumerate(parent_list):
         ax[i].set_xlabel("Return period [year]")
     else:
         ax[i].set_xlabel("")
-    ax.text(0.025,0.9,r"$\textbf{"+string.ascii_lowercase[i]+r"}$",transform=ax[i].transAxes)
+    ax[i].text(0.025,0.9,r"$\textbf{"+string.ascii_lowercase[i]+r"}$",transform=ax[i].transAxes)
     pco.set_grid(ax[i])
     ax[i].set_xticks([1,10,100,1000,10000,100000])
     ax[i].set_yticks([8,10,12,14,16])

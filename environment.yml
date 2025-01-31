@@ -1,0 +1,19 @@
+name: boost_estim
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - xarray
+  - numpy
+  - python
+  - tqdm
+  - pandas
+  - glob
+  - matplotlib
+  - scipy
+  - sys
+  - datetime
+  - csv
+  - string
+  - cartopy
+

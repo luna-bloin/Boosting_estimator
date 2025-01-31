@@ -8,12 +8,7 @@ dependencies:
   - python
   - tqdm
   - pandas
-  - glob
   - matplotlib
   - scipy
-  - sys
-  - datetime
-  - csv
-  - string
   - cartopy
 
